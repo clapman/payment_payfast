@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="payfast_form" inherit_id="payment.redirect_form">
+        <xpath expr="//form" position="attributes">
+            <!-- Use the URL determined in python -->
+            <attribute name="t-att-action">processing_values.get('url') or 'https://www.payfast.co.za/eng/process'</attribute> 
+        </xpath>
+        <xpath expr="//form" position="inside">
+            <!-- Add a specific input for the PayFast sandbox toggle logic if needed, 
+                 but usually, we just render the hidden inputs provided by specific_processing_values -->
+             <t t-if="provider.code == 'payfast'">
+                 <!-- We rely on the standard redirect_form loop which renders all items in processing_values -->
+                 <!-- However, if we need to force the URL dynamically: -->
+                 <input type="hidden" name="merchant_id" t-att-value="processing_values.get('merchant_id')"/>
+                 <input type="hidden" name="merchant_key" t-att-value="processing_values.get('merchant_key')"/>
+                 <input type="hidden" name="return_url" t-att-value="processing_values.get('return_url')"/>
+                 <input type="hidden" name="cancel_url" t-att-value="processing_values.get('cancel_url')"/>
+                 <input type="hidden" name="notify_url" t-att-value="processing_values.get('notify_url')"/>
+                 <input type="hidden" name="m_payment_id" t-att-value="processing_values.get('m_payment_id')"/>
+                 <input type="hidden" name="amount" t-att-value="processing_values.get('amount')"/>
+                 <input type="hidden" name="item_name" t-att-value="processing_values.get('item_name')"/>
+                 <input type="hidden" name="name_first" t-att-value="processing_values.get('name_first')"/>
+                 <input type="hidden" name="name_last" t-att-value="processing_values.get('name_last')"/>
+                 <input type="hidden" name="email_address" t-att-value="processing_values.get('email_address')"/>
+                 <input type="hidden" name="email_confirmation" t-att-value="processing_values.get('email_confirmation')"/>
+                 <input type="hidden" name="confirmation_address" t-att-value="processing_values.get('confirmation_address')"/>
+                 <input type="hidden" name="signature" t-att-value="processing_values.get('signature')"/>
+             </t>
+        </xpath>
+    </template>
+</odoo>

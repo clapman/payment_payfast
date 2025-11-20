@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="payfast_redirect_form">
+        <!-- 
+           FIX: We use 'payfast_url' directly. 
+           This guarantees the action="https://..." is rendered correctly.
+        -->
+        <form t-att-action="payfast_url" method="post" target="_self" id="payfast_checkout">
+            
+            <!-- Odoo Security Token -->
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+            
+            <!-- Loop through PayFast fields -->
+            <t t-foreach="payfast_data" t-as="key">
+                <input type="hidden" t-att-name="key" t-att-value="payfast_data[key]"/>
+            </t>
+        </form>
+        
+        <!-- Auto-Submit to PayFast -->
+        <script type="text/javascript">
+            (function() {
+                var form = document.getElementById('payfast_checkout');
+                if (form) {
+                    form.submit();
+                } else {
+                    console.error("PayFast Form not found!");
+                }
+            })();
+        </script>
+    </template>
+</odoo>

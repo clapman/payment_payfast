@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="payment_provider_form_payfast" model="ir.ui.view">
+        <field name="name">payment.provider.form.payfast</field>
+        <field name="model">payment.provider</field>
+        <field name="inherit_id" ref="payment.payment_provider_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='provider_credentials']" position="after">
+                <group invisible="code != 'payfast'">
+                    <field name="payfast_merchant_id"/>
+                    <field name="payfast_merchant_key"/>
+                    <field name="payfast_passphrase" password="True"/>
+                    <field name="payfast_sandbox"/>
+                    <!-- Helper toggle -->
+                    <field name="is_published" widget="boolean_toggle"/> 
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
