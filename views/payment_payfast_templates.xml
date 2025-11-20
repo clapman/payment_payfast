@@ -2,30 +2,25 @@
 <odoo>
     <template id="payfast_redirect_form">
         <!-- 
-           FIX: We use 'payfast_url' directly. 
-           This guarantees the action="https://..." is rendered correctly.
+            FIX: Use 'api_url'. 
+            Since we fixed the Python method name, this will now contain the PayFast URL.
         -->
-        <form t-att-action="payfast_url" method="post" target="_self" id="payfast_checkout">
+        <form t-att-action="api_url" method="post" target="_self" id="payfast_checkout_form">
             
-            <!-- Odoo Security Token -->
             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
             
-            <!-- Loop through PayFast fields -->
-            <t t-foreach="payfast_data" t-as="key">
-                <input type="hidden" t-att-name="key" t-att-value="payfast_data[key]"/>
+            <t t-foreach="payfast_fields" t-as="key">
+                <input type="hidden" t-att-name="key" t-att-value="payfast_fields[key]"/>
             </t>
         </form>
         
-        <!-- Auto-Submit to PayFast -->
-        <script type="text/javascript">
+        <!-- <script type="text/javascript">
             (function() {
-                var form = document.getElementById('payfast_checkout');
+                var form = document.getElementById('payfast_checkout_form');
                 if (form) {
                     form.submit();
-                } else {
-                    console.error("PayFast Form not found!");
                 }
             })();
-        </script>
+        </script> -->
     </template>
 </odoo>
