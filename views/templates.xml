@@ -6,11 +6,7 @@
             <attribute name="t-att-action">processing_values.get('url') or 'https://www.payfast.co.za/eng/process'</attribute> 
         </xpath>
         <xpath expr="//form" position="inside">
-            <!-- Add a specific input for the PayFast sandbox toggle logic if needed, 
-                 but usually, we just render the hidden inputs provided by specific_processing_values -->
              <t t-if="provider.code == 'payfast'">
-                 <!-- We rely on the standard redirect_form loop which renders all items in processing_values -->
-                 <!-- However, if we need to force the URL dynamically: -->
                  <input type="hidden" name="merchant_id" t-att-value="processing_values.get('merchant_id')"/>
                  <input type="hidden" name="merchant_key" t-att-value="processing_values.get('merchant_key')"/>
                  <input type="hidden" name="return_url" t-att-value="processing_values.get('return_url')"/>

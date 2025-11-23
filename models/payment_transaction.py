@@ -9,9 +9,7 @@ class PaymentTransaction(models.Model):
     _inherit = 'payment.transaction'
 
     def _get_specific_rendering_values(self, processing_values):
-        """ 
-        This method is working fine, keep using super() here as it exists.
-        """
+
         res = super()._get_specific_rendering_values(processing_values)
         if self.provider_code != 'payfast':
             return res
@@ -80,7 +78,6 @@ class PaymentTransaction(models.Model):
 
     def _process_notification_data(self, notification_data):
         """ 
-        FIX: Removed super() call.
         We handle the status update directly.
         """
         if self.provider_code != 'payfast':
@@ -95,3 +92,25 @@ class PaymentTransaction(models.Model):
             self._set_canceled()
         else:
             self._set_pending()
+
+    def _create_payment(self, **extra_create_values):
+        """
+        Override to link the transaction to the specific 'PayFast' payment method
+        configured on the Bank Journal.
+        """
+        if self.provider_code != 'payfast':
+            return super()._create_payment(**extra_create_values)
+
+        journal = self.provider_id.journal_id
+        if not journal:
+            return super()._create_payment(**extra_create_values)
+
+        # Now we search for 'payfast' specifically (instead of 'manual')
+        payfast_method = journal.inbound_payment_method_line_ids.filtered(
+            lambda l: l.payment_method_id.code == 'payfast'
+        )
+        
+        if payfast_method:
+            extra_create_values['payment_method_line_id'] = payfast_method[0].id
+        
+        return super()._create_payment(**extra_create_values)

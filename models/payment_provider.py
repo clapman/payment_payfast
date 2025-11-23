@@ -27,7 +27,7 @@ class PaymentProvider(models.Model):
         groups="base.group_system"
     )
     payfast_sandbox = fields.Boolean(
-        string="Test Mode",
+        string="Sandbox Test Mode",
         default=True
     )
     

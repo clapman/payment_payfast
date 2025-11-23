@@ -9,6 +9,7 @@
         'views/payment_payfast_templates.xml',
         'views/payment_provider_views.xml',
         'data/payment_provider_data.xml',
+        'data/account_payment_method.xml',
     ],
     'application': False,
     'license': 'LGPL-3',
