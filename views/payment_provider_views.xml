@@ -10,9 +10,6 @@
                     <field name="payfast_merchant_id"/>
                     <field name="payfast_merchant_key"/>
                     <field name="payfast_passphrase" password="True"/>
-                    <field name="payfast_sandbox"/>
-                    <!-- Helper toggle -->
-                    <field name="is_published" widget="boolean_toggle"/> 
                 </group>
             </xpath>
         </field>

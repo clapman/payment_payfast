@@ -1,103 +1,97 @@
 import logging
-from werkzeug import urls
+
 from odoo import _, api, models
-from odoo.exceptions import ValidationError
+from odoo.tools import urls
+
+from odoo.addons.payment_payfast.controllers.main import PayFastController
 
 _logger = logging.getLogger(__name__)
+
 
 class PaymentTransaction(models.Model):
     _inherit = 'payment.transaction'
 
     def _get_specific_rendering_values(self, processing_values):
-
         res = super()._get_specific_rendering_values(processing_values)
         if self.provider_code != 'payfast':
             return res
 
-        tx = self.sudo()
-        provider = tx.provider_id
-        
-        # FORCE HTTPS
+        self.ensure_one()
+        provider = self.provider_id
+
         base_url = provider.get_base_url()
-        if "localhost" not in base_url and not base_url.startswith('https'):
+        if 'localhost' not in base_url and not base_url.startswith('https'):
             base_url = base_url.replace('http://', 'https://')
 
-        payfast_amount = f"{tx.amount:.2f}"
-        partner_name = tx.partner_name or tx.partner_id.name or 'Customer'
-        first_name = (partner_name.strip().split(' ', 1) + [''])[0][:100]
-        last_name = (partner_name.strip().split(' ', 1) + [''])[1][:100]
-        if not last_name: last_name = 'Customer'
+        partner_name = self.partner_name or self.partner_id.name or 'Customer'
+        name_parts = partner_name.strip().split(' ', 1)
+        first_name = (name_parts[0] if name_parts else 'Customer')[:100]
+        last_name = (name_parts[1] if len(name_parts) > 1 else 'Customer')[:100]
 
         payfast_data = {
             'merchant_id': provider.payfast_merchant_id,
             'merchant_key': provider.payfast_merchant_key,
-            'return_url': urls.url_join(base_url, '/payment/payfast/return'),
-            'cancel_url': urls.url_join(base_url, '/payment/payfast/cancel'),
-            'notify_url': urls.url_join(base_url, '/payment/payfast/ipn'),
+            'return_url': urls.urljoin(base_url, PayFastController._return_url),
+            'cancel_url': urls.urljoin(base_url, PayFastController._cancel_url),
+            'notify_url': urls.urljoin(base_url, PayFastController._notify_url),
             'name_first': first_name,
             'name_last': last_name,
-            'email_address': tx.partner_email or tx.partner_id.email or '',
-            'm_payment_id': tx.reference,
-            'amount': payfast_amount,
-            'item_name': (tx.reference or 'Order')[:100],
+            'email_address': self.partner_email or self.partner_id.email or '',
+            'm_payment_id': self.reference,
+            'amount': f"{self.amount:.2f}",
+            'item_name': (self.reference or 'Order')[:100],
         }
-
         payfast_data['signature'] = provider._payfast_generate_signature(payfast_data)
 
-        if provider.payfast_sandbox:
-            target_url = 'https://sandbox.payfast.co.za/eng/process'
-        else:
-            target_url = 'https://www.payfast.co.za/eng/process'
-
+        api_url = (
+            'https://sandbox.payfast.co.za/eng/process'
+            if provider.state == 'test'
+            else 'https://www.payfast.co.za/eng/process'
+        )
         return {
-            'api_url': target_url,
-            'payfast_fields': payfast_data
+            'api_url': api_url,
+            'payfast_fields': payfast_data,
         }
 
-    def _get_tx_from_notification_data(self, provider_code, notification_data):
-        """ 
-        FIX: Removed super() call because Odoo 19 removed the base method.
-        We implement the search directly.
-        """
+    @api.model
+    def _extract_reference(self, provider_code, payment_data):
         if provider_code != 'payfast':
-            # If we can't call super, we return None/False for other providers 
-            # and hope they implement their own lookup. 
-            # But since this module only runs for PayFast logic, we focus on PayFast.
-            return self.env['payment.transaction']
+            return super()._extract_reference(provider_code, payment_data)
+        return payment_data.get('m_payment_id')
 
-        reference = notification_data.get('m_payment_id')
-        if not reference:
-            raise ValidationError("PayFast: Received data with missing 'm_payment_id'")
-
-        tx = self.search([('reference', '=', reference), ('provider_code', '=', 'payfast')], limit=1)
-        
-        if not tx:
-            raise ValidationError(f"PayFast: No transaction found for reference {reference}")
-        
-        return tx
-
-    def _process_notification_data(self, notification_data):
-        """ 
-        We handle the status update directly.
-        """
+    def _extract_amount_data(self, payment_data):
         if self.provider_code != 'payfast':
-            return
+            return super()._extract_amount_data(payment_data)
 
-        status = notification_data.get('payment_status')
-        _logger.info("PayFast: Processing Status %s for Ref %s", status, self.reference)
+        amount = payment_data.get('amount_gross') or payment_data.get('amount')
+        if amount is None:
+            return None
+        return {
+            'amount': float(amount),
+            'currency_code': payment_data.get('currency') or self.currency_id.name,
+        }
+
+    def _apply_updates(self, payment_data):
+        if self.provider_code != 'payfast':
+            return super()._apply_updates(payment_data)
+
+        provider_reference = payment_data.get('pf_payment_id')
+        if provider_reference:
+            self.provider_reference = provider_reference
+
+        status = (payment_data.get('payment_status') or '').upper()
+        _logger.info("PayFast: status %s for %s", status, self.reference)
 
         if status == 'COMPLETE':
             self._set_done()
-        elif status == 'CANCELLED':
+        elif status in ('CANCELLED', 'CANCELED'):
             self._set_canceled()
+        elif status == 'FAILED':
+            self._set_error(_("PayFast reported that the payment failed."))
         else:
             self._set_pending()
 
     def _create_payment(self, **extra_create_values):
-        """
-        Override to link the transaction to the specific 'PayFast' payment method
-        configured on the Bank Journal.
-        """
         if self.provider_code != 'payfast':
             return super()._create_payment(**extra_create_values)
 
@@ -105,12 +99,10 @@ class PaymentTransaction(models.Model):
         if not journal:
             return super()._create_payment(**extra_create_values)
 
-        # Now we search for 'payfast' specifically (instead of 'manual')
         payfast_method = journal.inbound_payment_method_line_ids.filtered(
-            lambda l: l.payment_method_id.code == 'payfast'
+            lambda line: line.payment_method_id.code == 'payfast'
         )
-        
         if payfast_method:
             extra_create_values['payment_method_line_id'] = payfast_method[0].id
-        
+
         return super()._create_payment(**extra_create_values)

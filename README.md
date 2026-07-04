@@ -33,12 +33,16 @@ It is designed to handle **Instant Payment Notifications (IPN)** for automatic s
 ### 1. Payment Provider Setup
 1.  Go to **Accounting** (or Website) > **Configuration** > **Payment Providers**.
 2.  Select **PayFast**.
-3.  Set the **State** to **Test Mode** (for Sandbox) or **Enabled** (for Production).
+3.  Set the **State** to **Test Mode** (sandbox) or **Enabled** (production).
 4.  Enter your credentials:
     *   **Merchant ID**
     *   **Merchant Key**
     *   **Passphrase** (Ensure this matches your PayFast dashboard settings).
-5.  **Publish** the provider.
+5.  **Publish** the provider (set State to Enabled and ensure the provider is published on the website).
+
+## Screenshots
+
+Add checkout and provider configuration screenshots to `static/description/` before publishing to the Odoo Apps Store (e.g. `main_screenshot.png` referenced from the store listing).
 
 ### 2. Accounting Journal (Critical)
 To prevent *"Please define a payment method line"* errors during invoice generation:

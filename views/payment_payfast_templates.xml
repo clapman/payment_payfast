@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="payfast_redirect_form">
-        <form t-att-action="api_url" method="post" target="_self" id="payfast_checkout_form">
-            
-            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-            
+        <form t-att-action="api_url" method="post">
             <t t-foreach="payfast_fields" t-as="key">
                 <input type="hidden" t-att-name="key" t-att-value="payfast_fields[key]"/>
             </t>

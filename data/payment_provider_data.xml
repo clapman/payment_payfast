@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="payment_provider_payfast" model="payment.provider">
-        <field name="name">PayFast</field>
-        <field name="code">payfast</field>
-        <!-- <field name="image_128" type="base64" file="payment_payfast/static/description/icon.png"/> -->
-        <field name="redirect_form_view_id" ref="payfast_redirect_form"/>
-        <field name="state">test</field>
-        <field name="payfast_merchant_id">1234</field>
-        <field name="payfast_merchant_key">abcd</field>
-        <!-- FIX: Comment this out for the first install. 
-             The Python model has default=True, so it will default to True anyway. -->
-        <!-- <field name="payfast_sandbox">True</field> -->
-    </record>
+    <data noupdate="1">
+        <record id="payment_provider_payfast" model="payment.provider">
+            <field name="name">PayFast</field>
+            <field name="code">payfast</field>
+            <field name="redirect_form_view_id" ref="payfast_redirect_form"/>
+            <field name="state">disabled</field>
+            <!-- Sandbox placeholders only — configure real credentials in Settings. -->
+            <field name="payfast_merchant_id">10000100</field>
+            <field name="payfast_merchant_key">46f0cd694581a</field>
+        </record>
+    </data>
 </odoo>
